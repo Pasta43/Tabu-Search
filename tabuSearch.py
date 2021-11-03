@@ -1,5 +1,5 @@
 class Problem:
-    def __init__(self,objective,startState,holding=3):
+    def __init__(self,objective,startState):
         self.objective=objective
         self.startState=startState
         self.frequencies=[]
@@ -9,11 +9,15 @@ class Problem:
             for j in range(i+1,len(state[2])):
                 copyState = state[2][:]
                 copyState[i],copyState[j] = state[2][j],state[2][i]
-                move=(copyState[j],copyState[i])
+                move=None
+                if(copyState[i]>copyState[j]):
+                    move=(copyState[j],copyState[i])
+                else:
+                    move=(copyState[i],copyState[j])
                 total=0
-                if(move in self.frequencies):
-                    count = [1 for i in range(len(self.frequencies)) if move == self.frequencies[i]]
-                    total = sum(count)    
+                
+                count = [1 for i in range(len(self.frequencies)) if copyState == self.frequencies[i][2]]
+                total = sum(count)    
                 value = self.objective((move,0,copyState),total)
                 neighbors.append((move,value,copyState))
         return neighbors
@@ -39,23 +43,24 @@ def tabuSearch(problem,holding):
     tabuList=[]
     actual = problem.getInitialState()
     bestSolution=(actual,aspiration)
-    it=1e3
+    it=1000
     i=0
     while(i<it):
         neighbors = problem.getNeighbors(actual)
         candidate = findBestNeighbor(neighbors)
         isInTabu= isCandidateInTabu(candidate,tabuList)
         while isInTabu:
-            if(problem.getAspiration(candidate)<=aspiration):
-                neighbors.remove(candidate[0])
+            if(problem.getAspiration(candidate)<=bestSolution[1]):
+                neighbors.remove(candidate)
                 candidate = findBestNeighbor(neighbors)
                 isInTabu= isCandidateInTabu(candidate,tabuList)
         actual=candidate
         aspiration=problem.getAspiration(candidate)
         tabuList=updateTabuList(tabuList,candidate,holding)
-        problem.frequencies.append(candidate[0])
+        problem.frequencies.append(candidate)
         if(aspiration>bestSolution[1]):
             bestSolution=(actual,aspiration)
+            print(bestSolution)
         i+=1   
     return bestSolution
 def findBestNeighbor(neighbors):
@@ -67,7 +72,7 @@ def findBestNeighbor(neighbors):
 
 def isCandidateInTabu(candidate,tabuList):
     for el in tabuList:
-        if(el[0]==candidate[0]):
+        if(el[0][0]==candidate[0]):
             return True
     return False
 
